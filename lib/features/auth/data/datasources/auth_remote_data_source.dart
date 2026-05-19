@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:social_login_test/features/auth/data/models/social_callback_model.dart';
+import 'package:social_login_test/features/auth/domain/entities/social_callback_entity.dart';
 
 import '../../../../core/config/gain_auth_config.dart';
 import '../../../../core/network/api_endpoints.dart';
@@ -19,30 +21,18 @@ abstract interface class AuthRemoteDataSource {
     required String accessToken,
     required Map<String, dynamic> variables,
   });
+
+  Future<SocialCallbackModel> manageSocialCallback({
+    required String accessToken,
+    required Map<String, dynamic> variables,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   AuthRemoteDataSourceImpl(this._client, this._graphQL);
-
   final DioClient _client;
   final GraphQLDioClient _graphQL;
 
-  static Options get _wafOptions => Options(
-        headers: <String, String>{
-          'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
-        },
-      );
-
-  /// GraphQL login flow: only pre-login Bearer (same as Apollo Sandbox).
-  static Options _graphQLOptions(String accessToken) => Options(
-        headers: <String, String>{
-          'Authorization': accessToken,
-          'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
-        },
-        extra: <String, dynamic>{
-          kSkipAuthInterceptor: true,
-        },
-      );
 
   @override
   Future<PreLoginResponseModel> appLogin({
@@ -55,8 +45,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'app_name': appName,
         'token': token,
       },
-      options: _wafOptions,
-    );
+      options: Options(
+          headers: <String, String>{
+            'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
+          },
+    ));
 
     return PreLoginResponseModel.fromJson(json);
   }
@@ -70,9 +63,36 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       graphqlQuery: GraphqlQueries.getSocialUrl,
       variables: variables,
       operationName: 'GET_SOCIAL_AUTHENTICATION_URL',
-      options: _graphQLOptions(accessToken),
+      options: Options(
+          headers: <String, String>{
+            'Authorization': accessToken,
+            'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
+          }
+      ),
     );
 
     return SocialAuthUrlResponseModel.fromGraphQLData(data);
+  }
+
+
+
+  @override
+  Future<SocialCallbackModel> manageSocialCallback({
+    required String accessToken,
+    required Map<String, dynamic> variables,
+  }) async {
+    final data = await _graphQL.query(
+      graphqlQuery: GraphqlQueries.manageSocialUrl,
+      variables: variables,
+      operationName: 'MANAGE_AUTHENTICATION_CALLBACK',
+      options: Options(
+          headers: <String, String>{
+            'Authorization': accessToken,
+            'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
+          }
+      ),
+    );
+
+    return SocialCallbackModel.fromJson(data);
   }
 }

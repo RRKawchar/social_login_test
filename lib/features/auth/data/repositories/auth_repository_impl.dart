@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:social_login_test/features/auth/domain/entities/social_callback_entity.dart';
 
 import '../../../../core/network/errors/network_exception.dart';
 import '../../../../core/network/graphql/graphql_client.dart';
@@ -57,11 +58,34 @@ class AuthRepositoryImpl implements AuthRepository {
     } on NetworkException catch (e) {
       return Left(_mapNetworkException(e));
     } catch (e) {
-
-      print("check dkjfkdfjkdfkdfkjdf ----- $e");
       return Left(ServerFailure(e.toString()));
     }
   }
+
+
+  @override
+  Future<Either<Failure, SocialCallbackEntity>> manageSocialCallback({
+    required String accessToken,
+    required Map<String, dynamic> variables
+  })async {
+    try {
+      final response = await _remoteDataSource.manageSocialCallback(
+        accessToken: accessToken,
+        variables: variables,
+      );
+      return Right(response);
+    } on GraphQLResponseException catch (e) {
+      return Left(ServerFailure(e.toString()));
+    } on NetworkException catch (e) {
+      return Left(_mapNetworkException(e));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+
+
+
 
   Failure _mapNetworkException(NetworkException exception) {
     return switch (exception) {
@@ -69,7 +93,7 @@ class AuthRepositoryImpl implements AuthRepository {
       TimeoutNetworkException() => const ServerFailure('Request timed out'),
       CancelledNetworkException() => const ServerFailure('Request cancelled'),
       HttpNetworkException(:final statusCode, :final message) =>
-        ServerFailure('$message${statusCode == null ? '' : ' ($statusCode)'}'),
+          ServerFailure('$message${statusCode == null ? '' : ' ($statusCode)'}'),
       BadCertificateNetworkException() => const ServerFailure('Bad certificate'),
       UnknownNetworkException() => const UnexpectedFailure(),
     };

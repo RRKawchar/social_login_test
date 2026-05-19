@@ -6,9 +6,9 @@ class GraphqlQueries {
       }
       ''';
 
-  static const String manageSocialUrl = r'''
-mutation MANAGE_AUTHENTICATION_CALLBACK($inputData: SocialAuthenticationInput) {
-  manageAuthenticationCallback(inputData: $inputData) {
+  static const String manageSocialUrl = '''
+      mutation MANAGE_AUTHENTICATION_CALLBACK(\$inputData: SocialAuthenticationInput) {
+  manageAuthenticationCallback(inputData: \$inputData) {
     ... on SocialAuthTokensType {
       access_token
       email
