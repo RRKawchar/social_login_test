@@ -5,7 +5,6 @@ import '../../../../core/network/api_endpoints.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/network/graphql/graphql_client.dart';
 import '../../../../core/network/graphql/graphql_queries.dart';
-import '../../../../core/network/interceptors/auth_interceptor.dart';
 import '../models/pre_login_response_model.dart';
 import '../models/social_auth_url_response_model.dart';
 
@@ -27,18 +26,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final DioClient _client;
   final GraphQLDioClient _graphQL;
 
+  /// Options for standard REST calls (like app-login)
   static Options get _wafOptions => Options(
         headers: <String, String>{
           'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
         },
       );
 
-  /// GraphQL login flow: only pre-login Bearer (same as Apollo Sandbox).
+  /// Options for GraphQL calls - must include both Auth and WAF tokens
   static Options _graphQLOptions(String accessToken) => Options(
         headers: <String, String>{
-          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+          'Authorization': accessToken, // No "Bearer " prefix for pre-login token
+          'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
         },
-
       );
 
   @override

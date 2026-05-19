@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
           'platform': 'google',
           'path': '/oauth',
           'prompt': 'select_account',
-          'sub_domain': 'liton',
+          'sub_domain': 'accounts',
         },
       },
     );
