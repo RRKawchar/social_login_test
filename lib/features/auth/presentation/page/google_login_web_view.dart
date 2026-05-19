@@ -17,14 +17,58 @@ class GoogleLoginWebView extends StatefulWidget {
 
 class _GoogleLoginWebViewState extends State<GoogleLoginWebView> {
   late final WebViewController _controller;
+  bool _isLoading = true;
+
+  final String _callBackPath = 'https://accounts.test.gain.io/oauth';
+
+  String _buildAuthUrl() {
+    final uri = Uri.parse(widget.authUrl);
+    final params = Map<String, String>.from(uri.queryParameters);
+    params['prompt'] = 'select_account';
+    return uri.replace(queryParameters: params).toString();
+  }
+
+  NavigationDecision _handleNavigation(
+      BuildContext context, NavigationRequest request) {
+    final url = request.url;
+    debugPrint('🔗 Navigation request: $url');
+
+    if (url.startsWith(_callBackPath)) {
+      final uri = Uri.parse(url);
+      final code = uri.queryParameters['code'];
+      final platform = uri.queryParameters['platform'];
+      final prompt = uri.queryParameters['prompt'];
+
+      debugPrint('──────────────────────────────────────────');
+      debugPrint('✅ OAuth callback received');
+      debugPrint('   code     : $code');
+      debugPrint('   platform : $platform');
+      debugPrint('   prompt   : $prompt');
+      debugPrint('   full url : $url');
+      debugPrint('──────────────────────────────────────────');
+
+      // Pop back and return the code so the calling screen can exchange it
+      if (context.mounted) {
+        Navigator.pop(context, code);
+      }
+      return NavigationDecision.prevent;
+    }
+
+    return NavigationDecision.navigate;
+  }
 
   @override
   void initState() {
     super.initState();
 
+    final authUrl = _buildAuthUrl();
+    debugPrint('🚀 Loading Google OAuth URL: $authUrl');
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    // Custom User Agent is often required by Google for WebViews
+      // A real mobile browser user-agent is required so Google does not block
+      // the sign-in flow and shows the account chooser for already-added
+      // accounts on the device.
       ..setUserAgent(
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) '
             'AppleWebKit/605.1.15 (KHTML, like Gecko) '
@@ -32,19 +76,30 @@ class _GoogleLoginWebViewState extends State<GoogleLoginWebView> {
       )
       ..setNavigationDelegate(
         NavigationDelegate(
-          onNavigationRequest: (NavigationRequest request) {
-            // Simply allow all navigation for now
-            return NavigationDecision.navigate;
-          },
+          onNavigationRequest: (NavigationRequest request) =>
+              _handleNavigation(context, request),
           onPageStarted: (String url) {
-            debugPrint('Page started loading: $url');
+            debugPrint('📄 Page started: $url');
+            setState(() => _isLoading = true);
+
+            // Intercept here too, in case the redirect skips onNavigationRequest
+            if (url.startsWith(_callBackPath)) {
+              _handleNavigation(context, NavigationRequest(
+                url: url,
+                isMainFrame: true,
+              ));
+            }
           },
           onPageFinished: (String url) {
-            debugPrint('Page finished loading: $url');
+            debugPrint('✔️  Page finished: $url');
+            setState(() => _isLoading = false);
+          },
+          onWebResourceError: (WebResourceError error) {
+            debugPrint('❌ WebView error: ${error.description}');
           },
         ),
       )
-      ..loadRequest(Uri.parse(widget.authUrl));
+      ..loadRequest(Uri.parse(authUrl));
   }
 
   @override
@@ -58,7 +113,13 @@ class _GoogleLoginWebViewState extends State<GoogleLoginWebView> {
         title: const Text('Sign in with Google'),
       ),
       body: SafeArea(
-        child: WebViewWidget(controller: _controller),
+        child: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator()),
+          ],
+        ),
       ),
     );
   }
