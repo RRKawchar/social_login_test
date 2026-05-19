@@ -1,13 +1,11 @@
 class GraphqlQueries {
-  static String getSocialUrl = '''
-     query GET_SOCIAL_AUTHENTICATION_URL(\$queryData: SocialAuthenticationURLInputType!) {
-   getSocialAuthenticationURL(queryData: \$queryData)
-  }
-  ''';
+  /// Minified — matches Apollo Sandbox (no leading spaces).
+  static const String getSocialUrl =
+      r'query GET_SOCIAL_AUTHENTICATION_URL($queryData: SocialAuthenticationURLInputType!) { getSocialAuthenticationURL(queryData: $queryData) }';
 
-  static String manageSocialUrl = '''
-     mutation MANAGE_AUTHENTICATION_CALLBACK(\$inputData: SocialAuthenticationInput) {
-  manageAuthenticationCallback(inputData: \$inputData) {
+  static const String manageSocialUrl = r'''
+mutation MANAGE_AUTHENTICATION_CALLBACK($inputData: SocialAuthenticationInput) {
+  manageAuthenticationCallback(inputData: $inputData) {
     ... on SocialAuthTokensType {
       access_token
       email
@@ -24,5 +22,5 @@ class GraphqlQueries {
     __typename
   }
 }
-  ''';
+''';
 }

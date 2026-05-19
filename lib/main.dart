@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_login_test/core/di/service_locator.dart';
 import 'package:social_login_test/core/routes/app_router.dart';
+import 'package:social_login_test/features/auth/presentation/page/login_page_tow.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,5 +23,7 @@ class MyApp extends StatelessWidget {
       ),
       routerConfig: appRouter,
     );
+
+
   }
 }

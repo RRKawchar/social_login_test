@@ -5,6 +5,7 @@ import 'package:social_login_test/core/di/service_locator.dart';
 import 'package:social_login_test/features/auth/presentation/cubit/get_social_url_cubit.dart';
 import 'package:social_login_test/features/auth/presentation/cubit/pre_login_cubit.dart';
 import 'package:social_login_test/features/auth/presentation/page/login_page.dart';
+import 'package:social_login_test/features/auth/presentation/page/login_page_tow.dart';
 
 import 'routes_name.dart';
 
@@ -12,7 +13,7 @@ import 'routes_name.dart';
 ///
 /// Use [appRouter] inside `MaterialApp.router(routerConfig: appRouter)`.
 final GoRouter appRouter = GoRouter(
-  initialLocation: RoutesName.login,
+  initialLocation: RoutesName.login2,
   routes: <RouteBase>[
     GoRoute(
       path: RoutesName.login,
@@ -24,6 +25,12 @@ final GoRouter appRouter = GoRouter(
         ],
         child: const LoginPage(),
       ),
+    ),
+
+    GoRoute(
+      path: RoutesName.login2,
+      name: 'login2',
+      builder: (context, state) => const LoginPageTow(),
     ),
   ],
   errorPageBuilder: (context, state) => MaterialPage<void>(

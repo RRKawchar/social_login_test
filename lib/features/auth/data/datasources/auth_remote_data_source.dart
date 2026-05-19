@@ -37,8 +37,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   static Options _graphQLOptions(String accessToken) => Options(
         headers: <String, String>{
           'Authorization': 'Bearer $accessToken',
+          'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
         },
-
+        extra: <String, dynamic>{
+          kSkipAuthInterceptor: true,
+        },
       );
 
   @override
