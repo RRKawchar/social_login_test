@@ -11,6 +11,10 @@ class PreLoginCubit extends Cubit<DataState<PreLoginResult>> {
   final PreLoginUseCase _preLoginUseCase;
 
   Future<void> preLogin([PreLoginParams? params]) async {
+    if (state.status == Status.loading || state.status == Status.success) {
+      return;
+    }
+
     emit(state.copyWith(status: Status.loading, message: ''));
 
     final result = await _preLoginUseCase(params ?? PreLoginParams.defaults());

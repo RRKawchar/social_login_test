@@ -17,7 +17,7 @@ final GoRouter appRouter = GoRouter(
       path: RoutesName.login,
       name: 'login',
       builder: (context, state) => BlocProvider(
-        create: (_) => sl<PreLoginCubit>()..preLogin(),
+        create: (_) => sl<PreLoginCubit>(),
         child: const LoginPage(),
       ),
     ),

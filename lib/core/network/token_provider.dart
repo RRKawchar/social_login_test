@@ -1,5 +1,7 @@
 abstract interface class TokenProvider {
   Future<String?> getAccessToken();
+
+  Future<void> setAccessToken(String? token);
 }
 
 /// Placeholder implementation.
@@ -7,7 +9,10 @@ abstract interface class TokenProvider {
 class InMemoryTokenProvider implements TokenProvider {
   String? _token;
 
-  void setToken(String? token) => _token = token;
+  @override
+  Future<void> setAccessToken(String? token) async {
+    _token = token;
+  }
 
   @override
   Future<String?> getAccessToken() async => _token;

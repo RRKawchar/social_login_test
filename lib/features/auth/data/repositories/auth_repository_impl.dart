@@ -1,15 +1,17 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/network/errors/network_exception.dart';
+import '../../../../core/network/token_provider.dart';
 import '../../../../core/shared/usecases/usecase.dart';
 import '../../domain/entities/pre_login_result.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._remoteDataSource);
+  AuthRepositoryImpl(this._remoteDataSource, this._tokenProvider);
 
   final AuthRemoteDataSource _remoteDataSource;
+  final TokenProvider _tokenProvider;
 
   @override
   Future<Either<Failure, PreLoginResult>> preLogin({
@@ -26,7 +28,10 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left(ServerFailure('Access token missing in response'));
       }
 
-      return Right(response.toEntity());
+      final result = response.toEntity();
+      await _tokenProvider.setAccessToken(result.accessToken);
+
+      return Right(result);
     } on NetworkException catch (e) {
       return Left(_mapNetworkException(e));
     } catch (e) {
