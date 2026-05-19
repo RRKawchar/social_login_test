@@ -1,13 +1,7 @@
 import 'package:dio/dio.dart';
-
 import '../api_endpoints.dart';
 import '../dio_client.dart';
 
-/// Minimal GraphQL client that sends GraphQL operations via Dio.
-///
-/// Server response shape expected:
-/// - success: { "data": { ... } }
-/// - failure: { "errors": [ ... ], "data": ...? }
 class GraphQLDioClient {
   GraphQLDioClient(
     this._client, {
@@ -18,7 +12,7 @@ class GraphQLDioClient {
   final String endpoint;
 
   Future<Map<String, dynamic>> query({
-    required String document,
+    required String graphqlQuery,
     Map<String, dynamic>? variables,
     String? operationName,
     Options? options,
@@ -26,7 +20,7 @@ class GraphQLDioClient {
     final json = await _client.post<Map<String, dynamic>>(
       endpoint,
       data: <String, dynamic>{
-        'query': document,
+        'query': graphqlQuery,
         if (variables != null) 'variables': variables,
         if (operationName != null) 'operationName': operationName,
       },
@@ -42,13 +36,13 @@ class GraphQLDioClient {
   }
 
   Future<Map<String, dynamic>> mutate({
-    required String document,
+    required String graphqlQuery,
     Map<String, dynamic>? variables,
     String? operationName,
     Options? options,
   }) =>
       query(
-        document: document,
+        graphqlQuery: graphqlQuery,
         variables: variables,
         operationName: operationName,
         options: options,

@@ -4,7 +4,9 @@ import 'package:get_it/get_it.dart';
 import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/domain/usecases/get_social_url_usecase.dart';
 import '../../features/auth/domain/usecases/pre_login_usecase.dart';
+import '../../features/auth/presentation/cubit/get_social_url_cubit.dart';
 import '../../features/auth/presentation/cubit/pre_login_cubit.dart';
 import '../network/dio_client.dart';
 import '../network/dio_factory.dart';
@@ -38,11 +40,13 @@ Future<void> setupServiceLocator() async {
 
   // ───── Auth feature ─────
   sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(sl()),
+    () => AuthRemoteDataSourceImpl(sl(), sl()),
   );
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(sl(), sl()),
   );
   sl.registerLazySingleton(() => PreLoginUseCase(sl()));
+  sl.registerLazySingleton(() => GetSocialUrlUseCase(sl()));
   sl.registerFactory(() => PreLoginCubit(sl()));
+  sl.registerFactory(() => GetSocialUrlCubit(sl()));
 }

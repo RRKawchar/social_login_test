@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
 import '../../../../core/enums/status.dart';
 import '../../../../core/shared/states/data_state.dart';
 import '../../domain/entities/pre_login_result.dart';
+import '../../domain/entities/social_auth_url.dart';
+import '../cubit/get_social_url_cubit.dart';
 import '../cubit/pre_login_cubit.dart';
 
 class LoginPage extends StatefulWidget {
@@ -24,7 +25,27 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
+  void _onGoogleLoginPressed() {
+    final preLoginReady =
+        context.read<PreLoginCubit>().state.status == Status.success;
+    if (!preLoginReady) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pre-login is still in progress.')),
+      );
+      return;
+    }
 
+    context.read<GetSocialUrlCubit>().fetchGoogleUrl(
+   variable:{
+     "queryData": {
+       "platform": "google",
+       "path": "/oauth",
+       "prompt": "select_account",
+       "sub_domain": "liton"
+     }
+   }
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,42 +53,94 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(title: const Text('Social Login Test')),
       body: Padding(
         padding: const EdgeInsets.all(24),
-        child: BlocBuilder<PreLoginCubit, DataState<PreLoginResult>>(
-          builder: (context, state) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (state.status == Status.loading)
-                  const LinearProgressIndicator(),
-                if (state.status == Status.failure) ...[
-                  Text(
-                    state.message,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<GetSocialUrlCubit, DataState<SocialAuthUrl>>(
+              listenWhen: (previous, current) =>
+                  previous.status != current.status,
+              listener: (context, state) {
+                if (state.status == Status.success && state.data != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'OAuth URL:\n${state.data!.url}',
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      duration: const Duration(seconds: 8),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: () => context.read<PreLoginCubit>().preLogin(),
-                    child: const Text('Retry pre-login'),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (state.status == Status.success)
-                  Text(
-                    'Session ready',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: state.status == Status.success
-                      ? () {}
-                      : null,
-                  child: const Text('Login with Google'),
-                ),
-              ],
-            );
-          },
+                  );
+                } else if (state.status == Status.failure) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message)),
+                  );
+                }
+              },
+            ),
+          ],
+          child: BlocBuilder<PreLoginCubit, DataState<PreLoginResult>>(
+            builder: (context, preLoginState) {
+              return BlocBuilder<GetSocialUrlCubit, DataState<SocialAuthUrl>>(
+                builder: (context, socialUrlState) {
+                  final isPreLoginReady =
+                      preLoginState.status == Status.success;
+                  final isFetchingUrl =
+                      socialUrlState.status == Status.loading;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (preLoginState.status == Status.loading)
+                        const LinearProgressIndicator(),
+                      if (preLoginState.status == Status.failure) ...[
+                        Text(
+                          preLoginState.message,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          onPressed: () =>
+                              context.read<PreLoginCubit>().preLogin(),
+                          child: const Text('Retry pre-login'),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (isPreLoginReady)
+                        Text(
+                          'Session ready',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      if (socialUrlState.status == Status.success &&
+                          socialUrlState.data != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Last OAuth URL (${socialUrlState.data!.url.length} chars)',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: isPreLoginReady && !isFetchingUrl
+                            ? _onGoogleLoginPressed
+                            : null,
+                        child: isFetchingUrl
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Login with Google'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );

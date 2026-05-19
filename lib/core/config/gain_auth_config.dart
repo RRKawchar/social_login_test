@@ -9,4 +9,5 @@ abstract final class GainAuthConfig {
 
   static const String appLoginToken =
       'pHSoxK1iu8OtloXwKiuSXoHvSV3AC0QF8mKWE9hml1Khsc8N1VVwI2aR0CL9';
+
 }

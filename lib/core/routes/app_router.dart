@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_login_test/core/di/service_locator.dart';
+import 'package:social_login_test/features/auth/presentation/cubit/get_social_url_cubit.dart';
 import 'package:social_login_test/features/auth/presentation/cubit/pre_login_cubit.dart';
 import 'package:social_login_test/features/auth/presentation/page/login_page.dart';
 
@@ -16,8 +17,11 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RoutesName.login,
       name: 'login',
-      builder: (context, state) => BlocProvider(
-        create: (_) => sl<PreLoginCubit>(),
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => sl<PreLoginCubit>()),
+          BlocProvider(create: (_) => sl<GetSocialUrlCubit>()),
+        ],
         child: const LoginPage(),
       ),
     ),
