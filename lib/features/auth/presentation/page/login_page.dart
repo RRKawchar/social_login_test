@@ -7,6 +7,7 @@ import '../../domain/entities/pre_login_result.dart';
 import '../../domain/entities/social_auth_url.dart';
 import '../cubit/get_social_url_cubit.dart';
 import '../cubit/pre_login_cubit.dart';
+import 'google_login_web_view.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -60,14 +61,20 @@ class _LoginPageState extends State<LoginPage> {
                   previous.status != current.status,
               listener: (context, state) {
                 if (state.status == Status.success && state.data != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'OAuth URL:\n${state.data!.url}',
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
+                  final preLoginData = context.read<PreLoginCubit>().state.data;
+                  if (preLoginData == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Pre-login data not available.')),
+                    );
+                    return;
+                  }
+
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => GoogleLoginWebView(
+                        authUrl: state.data!.url,
+                        preLoginToken: preLoginData.accessToken,
                       ),
-                      duration: const Duration(seconds: 8),
                     ),
                   );
                 } else if (state.status == Status.failure) {
