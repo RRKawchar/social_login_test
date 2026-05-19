@@ -7,6 +7,8 @@ import '../../domain/entities/pre_login_result.dart';
 import '../../domain/entities/social_auth_url.dart';
 import '../cubit/get_social_url_cubit.dart';
 import '../cubit/pre_login_cubit.dart';
+import 'google_login_web_auth2.dart';
+import 'google_login_web_view.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,6 +18,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  bool _isSystemBrowserFlow = false;
+
   @override
   void initState() {
     super.initState();
@@ -25,7 +29,11 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  void _onGoogleLoginPressed() {
+  void _onGoogleLoginPressed({bool useSystemBrowser = false}) {
+    setState(() {
+      _isSystemBrowserFlow = useSystemBrowser;
+    });
+
     final preLoginState = context.read<PreLoginCubit>().state;
     if (preLoginState.status != Status.success || preLoginState.data == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -41,10 +49,22 @@ class _LoginPageState extends State<LoginPage> {
           'platform': 'google',
           'path': '/oauth',
           'prompt': 'select_account',
-          'sub_domain': 'liton',
+          'sub_domain': 'accounts',
         },
       },
     );
+  }
+
+  Future<void> _handleSystemBrowserLogin(String url) async {
+    // This flow uses the system browser (Chrome/Safari) which shares device accounts.
+    final code = await GoogleLoginWebAuth2.authenticate(url);
+    if (code != null && mounted) {
+      debugPrint('✅ System Browser login success: $code');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('System Browser Success! Code: $code')),
+      );
+      // You can now proceed with your code exchange logic
+    }
   }
 
   @override
@@ -60,16 +80,34 @@ class _LoginPageState extends State<LoginPage> {
                   previous.status != current.status,
               listener: (context, state) {
                 if (state.status == Status.success && state.data != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'OAuth URL:\n${state.data!.url}',
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
+                  final preLoginData = context.read<PreLoginCubit>().state.data;
+                  if (preLoginData == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Pre-login data not available.')),
+                    );
+                    return;
+                  }
+
+                  if (_isSystemBrowserFlow) {
+                    _handleSystemBrowserLogin(state.data!.url);
+                  } else {
+                    // Method 2: In-App WebView
+                    Navigator.of(context).push<String?>(
+                      MaterialPageRoute(
+                        builder: (_) => GoogleLoginWebView(
+                          authUrl: state.data!.url,
+                          preLoginToken: preLoginData.accessToken,
+                        ),
                       ),
-                      duration: const Duration(seconds: 8),
-                    ),
-                  );
+                    ).then((code) {
+                      if (code != null && mounted) {
+                        debugPrint('✅ WebView login success: $code');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('WebView Success! Code: $code')),
+                        );
+                      }
+                    });
+                  }
                 } else if (state.status == Status.failure) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(state.message)),
@@ -123,9 +161,9 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: isPreLoginReady && !isFetchingUrl
-                            ? _onGoogleLoginPressed
+                            ? () => _onGoogleLoginPressed(useSystemBrowser: false)
                             : null,
-                        child: isFetchingUrl
+                        child: isFetchingUrl && !_isSystemBrowserFlow
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
@@ -133,7 +171,25 @@ class _LoginPageState extends State<LoginPage> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Login with Google'),
+                            : const Text('Login with Google (WebView)'),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: isPreLoginReady && !isFetchingUrl
+                            ? () => _onGoogleLoginPressed(useSystemBrowser: true)
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Theme.of(context).primaryColor),
+                        ),
+                        child: isFetchingUrl && _isSystemBrowserFlow
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Login with Google (System Browser)'),
                       ),
                     ],
                   );

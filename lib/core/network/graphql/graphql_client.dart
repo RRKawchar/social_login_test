@@ -51,6 +51,8 @@ class GraphQLDioClient {
   void _throwIfGraphQLErrors(Map<String, dynamic> json) {
     final errors = json['errors'];
     if (errors is List && errors.isNotEmpty) {
+      // Added logging to help identify server-side rejections
+      print('❌ GraphQL Error Response: $errors');
       throw GraphQLResponseException(errors);
     }
   }
@@ -64,4 +66,3 @@ final class GraphQLResponseException implements Exception {
   @override
   String toString() => 'GraphQLResponseException(errors: $errors)';
 }
-
