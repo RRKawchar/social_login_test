@@ -29,7 +29,7 @@ class AuthInterceptor extends Interceptor {
 
     final token = await _tokenProvider.getAccessToken();
     if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+      options.headers['Authorization'] = token;
     }
     handler.next(options);
   }
