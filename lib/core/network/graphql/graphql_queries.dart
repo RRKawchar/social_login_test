@@ -1,7 +1,10 @@
 class GraphqlQueries {
   /// Minified — matches Apollo Sandbox (no leading spaces).
   static const String getSocialUrl =
-      r'query GET_SOCIAL_AUTHENTICATION_URL($queryData: SocialAuthenticationURLInputType!) { getSocialAuthenticationURL(queryData: $queryData) }';
+      '''query GET_SOCIAL_AUTHENTICATION_URL(\$queryData: SocialAuthenticationURLInputType!) {
+        getSocialAuthenticationURL(queryData: \$queryData)
+      }
+      ''';
 
   static const String manageSocialUrl = r'''
 mutation MANAGE_AUTHENTICATION_CALLBACK($inputData: SocialAuthenticationInput) {

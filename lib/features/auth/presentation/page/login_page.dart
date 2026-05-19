@@ -18,7 +18,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  bool _isSystemBrowserFlow = false;
 
   @override
   void initState() {
@@ -30,10 +29,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onGoogleLoginPressed({bool useSystemBrowser = false}) {
-    setState(() {
-      _isSystemBrowserFlow = useSystemBrowser;
-    });
-
     final preLoginState = context.read<PreLoginCubit>().state;
     if (preLoginState.status != Status.success || preLoginState.data == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -41,7 +36,6 @@ class _LoginPageState extends State<LoginPage> {
       );
       return;
     }
-
     context.read<GetSocialUrlCubit>().fetchGoogleUrl(
       accessToken: preLoginState.data!.accessToken,
       variables: const {
@@ -55,17 +49,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Future<void> _handleSystemBrowserLogin(String url) async {
-    // This flow uses the system browser (Chrome/Safari) which shares device accounts.
-    final code = await GoogleLoginWebAuth2.authenticate(url);
-    if (code != null && mounted) {
-      debugPrint('✅ System Browser login success: $code');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('System Browser Success! Code: $code')),
-      );
-      // You can now proceed with your code exchange logic
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,26 +71,14 @@ class _LoginPageState extends State<LoginPage> {
                     return;
                   }
 
-                  if (_isSystemBrowserFlow) {
-                    _handleSystemBrowserLogin(state.data!.url);
-                  } else {
-                    // Method 2: In-App WebView
-                    Navigator.of(context).push<String?>(
-                      MaterialPageRoute(
-                        builder: (_) => GoogleLoginWebView(
-                          authUrl: state.data!.url,
-                          preLoginToken: preLoginData.accessToken,
-                        ),
+                  Navigator.of(context).push<String?>(
+                    MaterialPageRoute(
+                      builder: (_) => GoogleLoginWebView(
+                        authUrl: state.data!.url,
+                        preLoginToken: preLoginData.accessToken,
                       ),
-                    ).then((code) {
-                      if (code != null && mounted) {
-                        debugPrint('✅ WebView login success: $code');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('WebView Success! Code: $code')),
-                        );
-                      }
-                    });
-                  }
+                    ),
+                  );
                 } else if (state.status == Status.failure) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(state.message)),
@@ -163,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: isPreLoginReady && !isFetchingUrl
                             ? () => _onGoogleLoginPressed(useSystemBrowser: false)
                             : null,
-                        child: isFetchingUrl && !_isSystemBrowserFlow
+                        child: isFetchingUrl
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
@@ -174,23 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                             : const Text('Login with Google (WebView)'),
                       ),
                       const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: isPreLoginReady && !isFetchingUrl
-                            ? () => _onGoogleLoginPressed(useSystemBrowser: true)
-                            : null,
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Theme.of(context).primaryColor),
-                        ),
-                        child: isFetchingUrl && _isSystemBrowserFlow
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Login with Google (System Browser)'),
-                      ),
+
                     ],
                   );
                 },

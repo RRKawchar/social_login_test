@@ -13,7 +13,7 @@ import 'routes_name.dart';
 ///
 /// Use [appRouter] inside `MaterialApp.router(routerConfig: appRouter)`.
 final GoRouter appRouter = GoRouter(
-  initialLocation: RoutesName.login2,
+  initialLocation: RoutesName.login,
   routes: <RouteBase>[
     GoRoute(
       path: RoutesName.login,
@@ -27,11 +27,6 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
 
-    GoRoute(
-      path: RoutesName.login2,
-      name: 'login2',
-      builder: (context, state) => const LoginPageTow(),
-    ),
   ],
   errorPageBuilder: (context, state) => MaterialPage<void>(
     child: _RouterErrorScreen(message: state.error.toString()),

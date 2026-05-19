@@ -36,7 +36,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   /// GraphQL login flow: only pre-login Bearer (same as Apollo Sandbox).
   static Options _graphQLOptions(String accessToken) => Options(
         headers: <String, String>{
-          'Authorization': 'Bearer $accessToken',
+          'Authorization': accessToken,
           'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
         },
         extra: <String, dynamic>{
