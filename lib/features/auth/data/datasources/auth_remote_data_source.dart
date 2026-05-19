@@ -5,8 +5,8 @@ import '../../../../core/network/api_endpoints.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/network/graphql/graphql_client.dart';
 import '../../../../core/network/graphql/graphql_queries.dart';
+import '../../../../core/network/interceptors/auth_interceptor.dart';
 import '../models/pre_login_response_model.dart';
-import '../models/social_auth_url_query_input.dart';
 import '../models/social_auth_url_response_model.dart';
 
 abstract interface class AuthRemoteDataSource {
@@ -16,7 +16,8 @@ abstract interface class AuthRemoteDataSource {
   });
 
   Future<SocialAuthUrlResponseModel> getSocialAuthenticationUrl({
-    required Map<String,dynamic> variable,
+    required String accessToken,
+    required Map<String, dynamic> variables,
   });
 }
 
@@ -30,6 +31,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         headers: <String, String>{
           'x-waf-mobile-token': GainAuthConfig.wafMobileToken,
         },
+      );
+
+  /// GraphQL login flow: only pre-login Bearer (same as Apollo Sandbox).
+  static Options _graphQLOptions(String accessToken) => Options(
+        headers: <String, String>{
+          'Authorization': 'Bearer $accessToken',
+        },
+
       );
 
   @override
@@ -51,15 +60,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<SocialAuthUrlResponseModel> getSocialAuthenticationUrl({
-    required Map<String,dynamic> variable,
+    required String accessToken,
+    required Map<String, dynamic> variables,
   }) async {
     final data = await _graphQL.query(
       graphqlQuery: GraphqlQueries.getSocialUrl,
-      variables: <String, dynamic>{
-        'queryData': variable,
-      },
+      variables: variables,
       operationName: 'GET_SOCIAL_AUTHENTICATION_URL',
-      options: _wafOptions,
+      options: _graphQLOptions(accessToken),
     );
 
     return SocialAuthUrlResponseModel.fromGraphQLData(data);

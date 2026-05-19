@@ -26,9 +26,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onGoogleLoginPressed() {
-    final preLoginReady =
-        context.read<PreLoginCubit>().state.status == Status.success;
-    if (!preLoginReady) {
+    final preLoginState = context.read<PreLoginCubit>().state;
+    if (preLoginState.status != Status.success || preLoginState.data == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pre-login is still in progress.')),
       );
@@ -36,14 +35,15 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     context.read<GetSocialUrlCubit>().fetchGoogleUrl(
-   variable:{
-     "queryData": {
-       "platform": "google",
-       "path": "/oauth",
-       "prompt": "select_account",
-       "sub_domain": "liton"
-     }
-   }
+      accessToken: preLoginState.data!.accessToken,
+      variables: const {
+        'queryData': {
+          'platform': 'google',
+          'path': '/oauth',
+          'prompt': 'select_account',
+          'sub_domain': 'liton',
+        },
+      },
     );
   }
 

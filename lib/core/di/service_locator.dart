@@ -43,7 +43,7 @@ Future<void> setupServiceLocator() async {
     () => AuthRemoteDataSourceImpl(sl(), sl()),
   );
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl(), sl()),
+    () => AuthRepositoryImpl(sl()),
   );
   sl.registerLazySingleton(() => PreLoginUseCase(sl()));
   sl.registerLazySingleton(() => GetSocialUrlUseCase(sl()));

@@ -2,19 +2,16 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/network/errors/network_exception.dart';
 import '../../../../core/network/graphql/graphql_client.dart';
-import '../../../../core/network/token_provider.dart';
 import '../../../../core/shared/usecases/usecase.dart';
 import '../../domain/entities/pre_login_result.dart';
 import '../../domain/entities/social_auth_url.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
-import '../models/social_auth_url_query_input.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._remoteDataSource, this._tokenProvider);
+  AuthRepositoryImpl(this._remoteDataSource);
 
   final AuthRemoteDataSource _remoteDataSource;
-  final TokenProvider _tokenProvider;
 
   @override
   Future<Either<Failure, PreLoginResult>> preLogin({
@@ -31,10 +28,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left(ServerFailure('Access token missing in response'));
       }
 
-      final result = response.toEntity();
-      await _tokenProvider.setAccessToken(result.accessToken);
-
-      return Right(result);
+      return Right(response.toEntity());
     } on NetworkException catch (e) {
       return Left(_mapNetworkException(e));
     } catch (e) {
@@ -44,11 +38,13 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, SocialAuthUrl>> getSocialAuthenticationUrl({
-    required Map<String,dynamic> variable,
+    required String accessToken,
+    required Map<String, dynamic> variables,
   }) async {
     try {
       final response = await _remoteDataSource.getSocialAuthenticationUrl(
-        variable: variable,
+        accessToken: accessToken,
+        variables: variables,
       );
 
       if (response.url.isEmpty) {
@@ -61,6 +57,8 @@ class AuthRepositoryImpl implements AuthRepository {
     } on NetworkException catch (e) {
       return Left(_mapNetworkException(e));
     } catch (e) {
+
+      print("check dkjfkdfjkdfkdfkjdf ----- $e");
       return Left(ServerFailure(e.toString()));
     }
   }

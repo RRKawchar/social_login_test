@@ -10,12 +10,20 @@ class GetSocialUrlCubit extends Cubit<DataState<SocialAuthUrl>> {
 
   final GetSocialUrlUseCase _getSocialUrlUseCase;
 
-  Future<void> fetchGoogleUrl({required Map<String,dynamic> variable,}) async {
+  Future<void> fetchGoogleUrl({
+    required String accessToken,
+    required Map<String, dynamic> variables,
+  }) async {
     if (state.status == Status.loading) return;
 
     emit(state.copyWith(status: Status.loading, message: ''));
 
-    final result = await _getSocialUrlUseCase(variable);
+    final result = await _getSocialUrlUseCase(
+      GetSocialUrlParams(
+        accessToken: accessToken,
+        variables: variables,
+      ),
+    );
 
     result.fold(
       (failure) => emit(

@@ -11,6 +11,7 @@ abstract interface class AuthRepository {
   });
 
   Future<Either<Failure, SocialAuthUrl>> getSocialAuthenticationUrl({
-    required Map<String,dynamic> variable,
+    required String accessToken,
+    required Map<String, dynamic> variables,
   });
 }
