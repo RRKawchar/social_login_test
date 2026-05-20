@@ -7,6 +7,7 @@ import '../../domain/entities/pre_login_result.dart';
 import '../../domain/entities/social_auth_url.dart';
 import '../cubit/get_social_url_cubit.dart';
 import '../cubit/pre_login_cubit.dart';
+import '../cubit/social_callback_cubit.dart';
 import 'google_login_web_auth2.dart';
 
 class LoginPage extends StatefulWidget {
@@ -18,7 +19,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _isSystemAuthInProgress = false;
-  bool _isWebView=true;
+  bool _isWebView = true;
 
   @override
   void initState() {
@@ -114,21 +115,22 @@ class _LoginPageState extends State<LoginPage> {
                     );
                     return;
                   }
-                  if(_isWebView){
-                     Navigator.push<Object?>(
+                  if (_isWebView) {
+                    Navigator.push<Object?>(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => GoogleLoginWebView(
-                          authUrl: state.data!.url,
-                          preLoginToken: '',
+                        builder: (_) => BlocProvider.value(
+                          value: context.read<SocialCallbackCubit>(),
+                          child: GoogleLoginWebView(
+                            authUrl: state.data!.url,
+                            preLoginToken: preLoginData.accessToken,
+                          ),
                         ),
                       ),
                     );
-                  }else{
+                  } else {
                     _startSystemBrowserSignIn(authUrl: state.data!.url);
                   }
-
-
                 } else if (state.status == Status.failure) {
                   ScaffoldMessenger.of(
                     context,
@@ -182,11 +184,12 @@ class _LoginPageState extends State<LoginPage> {
                       ElevatedButton(
                         onPressed: isPreLoginReady && !isFetchingUrl
                             ? () {
-                          setState(() {
-                            _isWebView=false;
-                          });
-                          _onGoogleLoginPressed();
-                        }: null,
+                                setState(() {
+                                  _isWebView = false;
+                                });
+                                _onGoogleLoginPressed();
+                              }
+                            : null,
                         child: isFetchingUrl
                             ? const SizedBox(
                                 height: 20,
@@ -206,24 +209,25 @@ class _LoginPageState extends State<LoginPage> {
                       ElevatedButton(
                         onPressed: isPreLoginReady && !isFetchingUrl
                             ? () {
-                          setState(() {
-                            _isWebView=true;
-                          });
-                             _onGoogleLoginPressed();
-                        }:null,
+                                setState(() {
+                                  _isWebView = true;
+                                });
+                                _onGoogleLoginPressed();
+                              }
+                            : null,
                         child: isFetchingUrl
                             ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        )
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
                             : Text(
-                          _isSystemAuthInProgress
-                              ? 'Opening Google...'
-                              : 'Login with Google (webview)',
-                        ),
+                                _isSystemAuthInProgress
+                                    ? 'Opening Google...'
+                                    : 'Login with Google (webview)',
+                              ),
                       ),
                     ],
                   );

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_login_test/core/enums/status.dart';
+import 'package:social_login_test/features/auth/presentation/cubit/social_callback_cubit.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class GoogleLoginWebView extends StatefulWidget {
@@ -18,6 +21,7 @@ class GoogleLoginWebView extends StatefulWidget {
 class _GoogleLoginWebViewState extends State<GoogleLoginWebView> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _isCallbackHandled = false;
 
   final String _callBackPath = 'https://accounts.test.gain.io/oauth';
 
@@ -29,32 +33,89 @@ class _GoogleLoginWebViewState extends State<GoogleLoginWebView> {
   }
 
   NavigationDecision _handleNavigation(
-      BuildContext context, NavigationRequest request) {
+    BuildContext context,
+    NavigationRequest request,
+  ) {
     final url = request.url;
     debugPrint('🔗 Navigation request: $url');
 
-    if (url.startsWith(_callBackPath)) {
-      final uri = Uri.parse(url);
+    final uri = Uri.tryParse(url);
+    if (uri != null && _isExpectedCallback(uri) && !_isCallbackHandled) {
+      _isCallbackHandled = true;
       final code = uri.queryParameters['code'];
-      final platform = uri.queryParameters['platform'];
-      final prompt = uri.queryParameters['prompt'];
 
       debugPrint('──────────────────────────────────────────');
       debugPrint('✅ OAuth callback received');
       debugPrint('   code     : $code');
-      debugPrint('   platform : $platform');
-      debugPrint('   prompt   : $prompt');
       debugPrint('   full url : $url');
       debugPrint('──────────────────────────────────────────');
 
-      // Pop back and return the code so the calling screen can exchange it
       if (context.mounted) {
-        Navigator.pop(context, code);
+        _runSocialCallbackAndPop(code: code);
       }
       return NavigationDecision.prevent;
     }
 
     return NavigationDecision.navigate;
+  }
+
+  bool _isExpectedCallback(Uri uri) {
+    return uri.toString().startsWith(_callBackPath);
+  }
+
+  Future<void> _runSocialCallbackAndPop({required String? code}) async {
+    if (code == null || code.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('OAuth callback did not contain a code.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      Navigator.pop(context, null);
+      return;
+    }
+
+    try {
+      final cubit = context.read<SocialCallbackCubit>();
+      await cubit.handleSocialCallBack(
+        accessToken: widget.preLoginToken,
+        variables: <String, dynamic>{
+          'inputData': <String, dynamic>{
+            'prompt': 'select_account',
+            'platform': 'google',
+            'code': code,
+          },
+        },
+      );
+
+      if (!mounted) return;
+      final callbackState = cubit.state;
+      if (callbackState.status == Status.success) {
+        Navigator.pop(context, callbackState.data);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              callbackState.message.isEmpty
+                  ? 'Google login callback failed.'
+                  : callbackState.message,
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.pop(context, null);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Callback exchange failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      Navigator.pop(context, null);
+    }
   }
 
   @override
@@ -71,8 +132,8 @@ class _GoogleLoginWebViewState extends State<GoogleLoginWebView> {
       // accounts on the device.
       ..setUserAgent(
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) '
-            'AppleWebKit/605.1.15 (KHTML, like Gecko) '
-            'Version/17.0 Mobile/15E148 Safari/604.1',
+        'AppleWebKit/605.1.15 (KHTML, like Gecko) '
+        'Version/17.0 Mobile/15E148 Safari/604.1',
       )
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -83,11 +144,14 @@ class _GoogleLoginWebViewState extends State<GoogleLoginWebView> {
             setState(() => _isLoading = true);
 
             // Intercept here too, in case the redirect skips onNavigationRequest
-            if (url.startsWith(_callBackPath)) {
-              _handleNavigation(context, NavigationRequest(
-                url: url,
-                isMainFrame: true,
-              ));
+            final uri = Uri.tryParse(url);
+            if (uri != null &&
+                _isExpectedCallback(uri) &&
+                !_isCallbackHandled) {
+              _handleNavigation(
+                context,
+                NavigationRequest(url: url, isMainFrame: true),
+              );
             }
           },
           onPageFinished: (String url) {
@@ -116,8 +180,7 @@ class _GoogleLoginWebViewState extends State<GoogleLoginWebView> {
         child: Stack(
           children: [
             WebViewWidget(controller: _controller),
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator()),
+            if (_isLoading) const Center(child: CircularProgressIndicator()),
           ],
         ),
       ),
