@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:social_login_test/features/auth/presentation/page/google_login_web_view.dart';
 import '../../../../core/enums/status.dart';
 import '../../../../core/shared/states/data_state.dart';
 import '../../domain/entities/pre_login_result.dart';
@@ -8,7 +8,6 @@ import '../../domain/entities/social_auth_url.dart';
 import '../cubit/get_social_url_cubit.dart';
 import '../cubit/pre_login_cubit.dart';
 import 'google_login_web_auth2.dart';
-import 'google_login_web_view.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,6 +17,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  bool _isSystemAuthInProgress = false;
+  bool _isWebView=true;
 
   @override
   void initState() {
@@ -28,7 +29,7 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  void _onGoogleLoginPressed({bool useSystemBrowser = false}) {
+  void _onGoogleLoginPressed() {
     final preLoginState = context.read<PreLoginCubit>().state;
     if (preLoginState.status != Status.success || preLoginState.data == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,6 +50,47 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Future<void> _startSystemBrowserSignIn({required String authUrl}) async {
+    if (_isSystemAuthInProgress) return;
+
+    setState(() => _isSystemAuthInProgress = true);
+
+    try {
+      final code = await GoogleLoginWebAuth2.authenticate(authUrl);
+      if (!mounted) return;
+
+      if (code == null || code.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google sign-in did not return authorization code.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Google authorization successful (system browser).'),
+        ),
+      );
+
+      debugPrint('✅ OAuth code received: $code');
+      // TODO: Exchange [code] using manageSocialCallback.
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google sign-in failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSystemAuthInProgress = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,23 +108,31 @@ class _LoginPageState extends State<LoginPage> {
                   final preLoginData = context.read<PreLoginCubit>().state.data;
                   if (preLoginData == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Pre-login data not available.')),
+                      const SnackBar(
+                        content: Text('Pre-login data not available.'),
+                      ),
                     );
                     return;
                   }
-
-                  Navigator.of(context).push<String?>(
-                    MaterialPageRoute(
-                      builder: (_) => GoogleLoginWebView(
-                        authUrl: state.data!.url,
-                        preLoginToken: preLoginData.accessToken,
+                  if(_isWebView){
+                     Navigator.push<Object?>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GoogleLoginWebView(
+                          authUrl: state.data!.url,
+                          preLoginToken: '',
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  }else{
+                    _startSystemBrowserSignIn(authUrl: state.data!.url);
+                  }
+
+
                 } else if (state.status == Status.failure) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(state.message)));
                 }
               },
             ),
@@ -93,8 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                 builder: (context, socialUrlState) {
                   final isPreLoginReady =
                       preLoginState.status == Status.success;
-                  final isFetchingUrl =
-                      socialUrlState.status == Status.loading;
+                  final isFetchingUrl = socialUrlState.status == Status.loading;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -132,8 +181,12 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: isPreLoginReady && !isFetchingUrl
-                            ? () => _onGoogleLoginPressed(useSystemBrowser: false)
-                            : null,
+                            ? () {
+                          setState(() {
+                            _isWebView=false;
+                          });
+                          _onGoogleLoginPressed();
+                        }: null,
                         child: isFetchingUrl
                             ? const SizedBox(
                                 height: 20,
@@ -142,10 +195,36 @@ class _LoginPageState extends State<LoginPage> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Login with Google (WebView)'),
+                            : Text(
+                                _isSystemAuthInProgress
+                                    ? 'Opening Google...'
+                                    : 'Login with Google (System Browser)',
+                              ),
                       ),
-                      const SizedBox(height: 12),
 
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: isPreLoginReady && !isFetchingUrl
+                            ? () {
+                          setState(() {
+                            _isWebView=true;
+                          });
+                             _onGoogleLoginPressed();
+                        }:null,
+                        child: isFetchingUrl
+                            ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                            : Text(
+                          _isSystemAuthInProgress
+                              ? 'Opening Google...'
+                              : 'Login with Google (webview)',
+                        ),
+                      ),
                     ],
                   );
                 },
