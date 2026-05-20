@@ -32,7 +32,6 @@
             android:exported="true"
             android:taskAffinity="">
             
-            <!-- Fixed Scheme: Removed underscores to comply with RFC 3986 -->
             <intent-filter android:label="flutter_web_auth_2_custom_scheme">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -40,16 +39,6 @@
                 <data
                     android:scheme="sociallogintest"
                     android:host="oauth" />
-            </intent-filter>
-
-            <intent-filter android:autoVerify="true" android:label="flutter_web_auth_2_test">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="https"
-                    android:host="social.test.gain.io"
-                    android:path="/callback" />
             </intent-filter>
         </activity>
     </application>
