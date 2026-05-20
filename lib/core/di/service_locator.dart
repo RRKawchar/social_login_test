@@ -6,8 +6,10 @@ import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/get_social_url_usecase.dart';
 import '../../features/auth/domain/usecases/pre_login_usecase.dart';
+import '../../features/auth/domain/usecases/social_callback_usecase.dart';
 import '../../features/auth/presentation/cubit/get_social_url_cubit.dart';
 import '../../features/auth/presentation/cubit/pre_login_cubit.dart';
+import '../../features/auth/presentation/cubit/social_callback_cubit.dart';
 import '../network/dio_client.dart';
 import '../network/dio_factory.dart';
 import '../network/graphql/graphql_client.dart';
@@ -25,9 +27,7 @@ Future<void> setupServiceLocator() async {
   // ───── Core: network ─────
   sl.registerLazySingleton(LoggingInterceptor.new);
   sl.registerLazySingleton<ErrorInterceptor>(ErrorInterceptor.new);
-  sl.registerLazySingleton(
-    () => AuthInterceptor(sl<TokenProvider>()),
-  );
+  sl.registerLazySingleton(() => AuthInterceptor(sl<TokenProvider>()));
   sl.registerLazySingleton<Dio>(
     () => DioFactory.create(
       authInterceptor: sl(),
@@ -42,11 +42,11 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(sl(), sl()),
   );
-  sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl()),
-  );
+  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
   sl.registerLazySingleton(() => PreLoginUseCase(sl()));
   sl.registerLazySingleton(() => GetSocialUrlUseCase(sl()));
+  sl.registerLazySingleton(() => SocialCallbackUsecase(sl()));
   sl.registerFactory(() => PreLoginCubit(sl()));
   sl.registerFactory(() => GetSocialUrlCubit(sl()));
+  sl.registerFactory(() => SocialCallbackCubit(sl()));
 }

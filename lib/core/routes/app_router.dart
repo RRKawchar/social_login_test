@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:social_login_test/core/di/service_locator.dart';
 import 'package:social_login_test/features/auth/presentation/cubit/get_social_url_cubit.dart';
 import 'package:social_login_test/features/auth/presentation/cubit/pre_login_cubit.dart';
+import 'package:social_login_test/features/auth/presentation/cubit/social_callback_cubit.dart';
 import 'package:social_login_test/features/auth/presentation/page/login_page.dart';
-import 'package:social_login_test/features/auth/presentation/page/login_page_tow.dart';
 
 import 'routes_name.dart';
 
@@ -22,11 +22,11 @@ final GoRouter appRouter = GoRouter(
         providers: [
           BlocProvider(create: (_) => sl<PreLoginCubit>()),
           BlocProvider(create: (_) => sl<GetSocialUrlCubit>()),
+          BlocProvider(create: (_) => sl<SocialCallbackCubit>()),
         ],
         child: const LoginPage(),
       ),
     ),
-
   ],
   errorPageBuilder: (context, state) => MaterialPage<void>(
     child: _RouterErrorScreen(message: state.error.toString()),
