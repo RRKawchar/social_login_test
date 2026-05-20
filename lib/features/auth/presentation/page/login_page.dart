@@ -38,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
       );
       return;
     }
-    context.read<GetSocialUrlCubit>().fetchGoogleUrl(
+   final result= context.read<GetSocialUrlCubit>().fetchGoogleUrl(
       accessToken: preLoginState.data!.accessToken,
       variables: const {
         'queryData': {
@@ -49,7 +49,13 @@ class _LoginPageState extends State<LoginPage> {
         },
       },
     );
+
+
+    debugPrint("check result ----------------  ${result}");
   }
+
+
+
 
   Future<void> _startSystemBrowserSignIn({required String authUrl}) async {
     if (_isSystemAuthInProgress) return;
